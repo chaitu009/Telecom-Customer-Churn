@@ -28,25 +28,20 @@ library(reshape)
 table(df$Churn)
 pie(table(df$Churn),main = 'Pie chart for Customer Churn',radius = 1)
 
+#Exploratory data analysis
+imppred <- randomForest(Churn ~ ., data = df,
+                        ntree = 100, keep.forest = FALSE, importance = TRUE)
+importance(imppred, type = 1)
+
 #Seperating the numeric data
 numeric_index = sapply(df,is.numeric)
 numeric_data = df[,numeric_index]
 
 cnames = colnames(numeric_data)
 
-#Exploratory data analysis
-for(i in 1:ncol(numeric_data))
-{
- hist(numeric_data[,i],main = paste("Histogram of" , cnames[i]),col='green',border = 'black')
-}
-imppred <- randomForest(Churn ~ ., data = df,
-                        ntree = 100, keep.forest = FALSE, importance = TRUE)
-importance(imppred, type = 1)
-
-
 #Encoding categorical variables 
 for(i in 1:ncol(df)){
-    if(class(df[,i]) == 'factor'){
+  if(class(df[,i]) == 'factor'){
     df[,i] = factor(df[,i], labels =(1:length(levels(factor(df[,i])))))
   }
 }
@@ -91,7 +86,7 @@ for(i in 1:4)
 {
   print(names(factor_data[i]))
   print(chisq.test(table(factor_data$Churn,factor_data[,i])))
-        
+  
 }
 
 #Feature Selection or Dimensionality Reduction
@@ -107,13 +102,15 @@ for( i in colnames(numeric_data))
 {
   print(i)
   df_train[,i] = (df_train[,i]- min(df_train[,i]))/
-            (max(df_train[,i] - min(df_train[,i])))   
+    (max(df_train[,i] - min(df_train[,i])))   
 }
 
 ############ Test Data processing############
 
 #Importing the test data
 df = read.csv('Test_data.csv')
+df=df[sample(nrow(df), 500), ]
+write.csv(df,'sampleinput_R.csv')
 sum(is.na(df))
 head(df)
 str(df)
@@ -150,18 +147,10 @@ C50_model = C5.0(Churn ~.,df_train, trails = 100, rules = TRUE)
 #summary(C50_model)
 #Predicting the output
 C50_predictions = predict(C50_model,df_test[,-15],type = 'class')
+write.csv(C50_predictions,'output_R.csv')
 
 #Evaluate the performance of classification model
 Confmatrix_C50 = table(df_test$Churn,C50_predictions)
 confusionMatrix(Confmatrix_C50)
-
-
-#Buliding and training a Random Forest Model
-#RF
-RF_model = randomForest(Churn ~.,df_train, importance = TRUE, ntree=100)
-RF_Predictions = predict(RF_model, df_test[,-15])
-
-Confmatrix_RF = table(df_test$Churn,RF_Predictions)
-confusionMatrix(Confmatrix_RF)
 
 #############################################END########################  
